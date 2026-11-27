@@ -519,3 +519,13 @@ gh auth status                         # verify GitHub login
 - Ticket-driven mode was tested against a **mock Jira server** and a **fake `gh`**: import, endpoint fallback, bouncing thin tickets, label swaps, comments, no double import, and write-back after completion.
 - Tested end to end in a sandbox with a **stand-in agent** and a local git remote: worktree creation, agent call, verify, review, commit, move to done, and the failure path to `tasks/failed/`. The health check and Jira script were syntax- and error-path-tested.
 - **Not tested** against the real Copilot CLI, GitHub, `gh`, or Jira, since those are not available in the sandbox. The Copilot CLI flags and custom-agent `tools:` names in this package follow GitHub's documentation as I found it, but Copilot changes often. Section 9 and the troubleshooting table are there to catch any mismatch quickly.
+
+1. run python jira_import.py to import tickets to todo list
+
+$env:JIRA_BASE_URL = "https://elhub.atlassian.net"
+$env:JIRA_EMAIL = "huy.duong@statnett.no"
+$token = Read-Host "Jira API token" -AsSecureString
+$env:JIRA_API_TOKEN = [System.Net.NetworkCredential]::new("", $token).Password
+python jira_import.py
+
+2. run python run.py watch to do code and send pr
