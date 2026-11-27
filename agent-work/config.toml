@@ -1,0 +1,100 @@
+# ---------------------------------------------------------------
+# Agent loop configuration. Edit this, not run.py.
+# ---------------------------------------------------------------
+
+[paths]
+todo      = "tasks/todo"
+doing     = "tasks/doing"
+done      = "tasks/done"
+failed    = "tasks/failed"
+repos     = "repos"        # your clones: repos/backend, repos/frontend, ...
+worktrees = "worktrees"    # one isolated checkout per task per repo
+logs      = "logs"
+
+[limits]
+max_fix_rounds        = 3      # verify -> fix retries
+max_review_rounds     = 2      # reviewer -> rework rounds
+agent_timeout_seconds = 1800
+verify_timeout_seconds = 900
+max_diff_chars        = 200000
+poll_seconds          = 30
+
+[git]
+branch_prefix = "agent/"
+# SAFE DEFAULTS: everything stays local until you flip these.
+# Start with false, inspect worktrees/<TASK>/<repo> yourself, then enable.
+push      = true
+create_pr = true             # always creates DRAFT PRs, never merges
+
+# ---------------------------------------------------------------
+# Ticket-driven mode: tickets ASSIGNED TO YOU become tasks automatically.
+# A ticket is picked up only if it is assigned to you AND has the trigger label,
+# so you opt in per ticket. Create these labels in Jira / GitHub first.
+# ---------------------------------------------------------------
+[sources]
+poll_seconds          = 120               # how often `run.py watch` checks tickets
+write_back            = true              # comment PR links / failures on the ticket
+min_description_chars = 150               # thinner tickets are bounced back, not run
+trigger_label         = "agent-ready"     # you add this when a ticket is ready for the agent
+progress_label        = "agent-in-progress"
+done_label            = "agent-pr-ready"
+failed_label          = "agent-failed"
+needs_info_label      = "agent-needs-info"
+
+[sources.jira]
+enabled = false
+# Needs env vars JIRA_BASE_URL + (JIRA_EMAIL + JIRA_API_TOKEN | JIRA_PAT).
+# Repos come from labels like `repo-backend` / `repo-frontend` or Jira components.
+# If you change trigger_label, change it here too.
+jql = 'assignee = currentUser() AND labels = "agent-ready" AND statusCategory != Done ORDER BY created ASC'
+
+[sources.github]
+enabled = false
+# Uses `gh`. Looks at open issues assigned to you with the trigger label in every
+# [repos.*] below. Add extra labels like `repo-frontend` to include more repos.
+# GitHub-hosted repo is derived from the clone's origin URL; override per repo with
+#   github = "owner/repo"   inside [repos.<name>] if needed.
+
+# ---------------------------------------------------------------
+# Agent commands. {prompt} is replaced with the prompt text.
+# The agent runs with cwd = worktrees/<TASK>/ (sees all task repos).
+#
+# VERIFY THE FLAGS against `copilot --help` for your installed version;
+# they change between releases. Prefer a narrow allowlist over allow-all.
+# ---------------------------------------------------------------
+[agent]
+coder_command = [
+  "copilot", "--agent=task-coder", "-p", "{prompt}",
+  "--allow-tool", "write",
+  "--allow-tool", "shell(git)",
+  "--allow-tool", "shell(npm)",
+  "--allow-tool", "shell(pytest)",
+  "--deny-tool", "shell(git push)",
+  "--deny-tool", "shell(rm)",
+]
+
+# Reviewer is read-only: no write tool, no shell.
+reviewer_command = [
+  "copilot", "--agent=task-reviewer", "-p", "{prompt}",
+  "--deny-tool", "write",
+  "--deny-tool", "shell",
+]
+
+# ---------------------------------------------------------------
+# Repos. Names must match folder names under repos/.
+# `verify` commands run inside the task's worktree for that repo.
+# ---------------------------------------------------------------
+[repos.structure-data-market-participant-registry-service]
+base   = "main"
+verify = ["gradlew test"]
+
+[repos.structure-data-market-participant-registry-frontend]
+base   = "main"
+verify = ["npm ci", "npm run lint", "npm run test:run", "npm run build"]
+
+# ---------------------------------------------------------------
+# Optional notification. Uncomment and adapt.
+# ---------------------------------------------------------------
+# [notify]
+# command = ["curl", "-s", "-X", "POST", "-H", "Content-Type: application/json",
+#            "-d", "{\"text\": \"{message}\"}", "https://YOUR_TEAMS_OR_SLACK_WEBHOOK"]

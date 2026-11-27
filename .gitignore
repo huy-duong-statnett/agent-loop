@@ -1,0 +1,9 @@
+agent-work/repos/
+agent-work/worktrees/
+agent-work/logs/
+agent-work/state/
+agent-work/tasks/
+**/.env
+**/.env.*
+**/__pycache__/
+*.pyc
