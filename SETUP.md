@@ -522,10 +522,12 @@ gh auth status                         # verify GitHub login
 
 1. run python jira_import.py to import tickets to todo list
 
-$env:JIRA_BASE_URL = "https://elhub.atlassian.net"
-$env:JIRA_EMAIL = "huy.duong@statnett.no"
+'''
+$env:JIRA_BASE_URL = "https://your org.atlassian.net"
+$env:JIRA_EMAIL = "your email"
 $token = Read-Host "Jira API token" -AsSecureString
 $env:JIRA_API_TOKEN = [System.Net.NetworkCredential]::new("", $token).Password
 python jira_import.py
+'''
 
 2. run python run.py watch to do code and send pr
